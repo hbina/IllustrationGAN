@@ -102,7 +102,7 @@ def generator_template():
                 .apply(gen_activation_fn)
                 .fully_connected(FLAGS.z_size)
         )
-
+    print(output, z_prediction)
     return output, z_prediction
 
 

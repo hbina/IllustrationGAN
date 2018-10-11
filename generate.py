@@ -14,8 +14,8 @@ import model
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('model_dir', './tmp',
-                           '''Directory where the model file is located.''')
+tf.app.flags.DEFINE_string('model_dir', './tmp', '''Directory where the model file is located.''')
+tf.app.flags.DEFINE_integer('batch_size', 0, '''Batch size, should be recalculated by the generated images''')
 
 GRID = (8, 8)
 
@@ -39,6 +39,8 @@ def main(argv=None):
     input.init_dataset_constants()
     num_images = GRID[0] * GRID[1]
     FLAGS.batch_size = num_images
+    print("FLAGS.batch_size", FLAGS.batch_size)
+    print("FLAGS.z_size", FLAGS.z_size)
     with tf.Graph().as_default():
         g_template = model.generator_template()
         z = tf.placeholder(tf.float32, shape=[FLAGS.batch_size, FLAGS.z_size])

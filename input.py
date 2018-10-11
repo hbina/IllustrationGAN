@@ -118,6 +118,8 @@ def inputs():
         filename_queue = tf.train.string_input_producer(filenames)
         image = read_and_decode_cifar(filename_queue)
     elif FLAGS.dataset == 'custom':
+        print("here?")
+        print(os.path.join(FLAGS.data_dir, '*.tfrecords'))
         filenames = tf.train.match_filenames_once(os.path.join(FLAGS.data_dir, '*.tfrecords'))
         filename_queue = tf.train.string_input_producer(filenames)
         image = read_and_decode2(filename_queue)
