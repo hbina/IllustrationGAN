@@ -2,17 +2,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
-import sys
-
-import tensorflow as tf
 import prettytensor as pt
-import numpy as np
-
-import custom_ops
-from custom_ops import leaky_rectify
+import tensorflow as tf
 
 import input
+from custom_ops import leaky_rectify
 
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('model', 'default',
@@ -41,10 +35,12 @@ discrim_optimizer = lambda: optimizer(FLAGS.learning_rate)
 gen_activation_fn = tf.nn.relu
 discrim_activation_fn = leaky_rectify
 
+
 def _activation_summary(x):
     tensor_name = x.op.name
     tf.histogram_summary(tensor_name + '/activations', x)
     tf.scalar_summary(tensor_name + '/sparsity', tf.nn.zero_fraction(x))
+
 
 '''
 def reshape_for_sequence(tensor):
@@ -72,47 +68,49 @@ def reshape_from_sequence(tensor, side, depth):
     return result
 '''
 
+
 def generator_template():
     starting_size = int(input.IMAGE_SIZE / (2 ** input.NUM_LEVELS))
     num_filters = FLAGS.gen_filter_base * (2 ** input.NUM_LEVELS)
     with tf.variable_scope('generator'):
         tmp = pt.template('input')
-        for i in xrange(FLAGS.gen_fc_layers - 1):
+        for i in range(FLAGS.gen_fc_layers - 1):
             tmp = tmp.fully_connected(FLAGS.gen_fc_size).apply(gen_activation_fn)
-        tmp = tmp.fully_connected(starting_size*starting_size*num_filters/2).apply(gen_activation_fn)
+        tmp = tmp.fully_connected(starting_size * starting_size * num_filters / 2).apply(gen_activation_fn)
         features = tmp
 
-        tmp = tmp.reshape([FLAGS.batch_size, starting_size, starting_size, num_filters/2])
-        for i in xrange(input.NUM_LEVELS):
+        tmp = tmp.reshape([FLAGS.batch_size, starting_size, starting_size, num_filters / 2])
+        for i in range(input.NUM_LEVELS):
             num_filters = int(num_filters / 2)
             tmp = (
                 tmp
-                .upsample_conv(5, num_filters)
-                #.custom_deconv2d(num_filters)
-                .batch_normalize()
-                .apply(gen_activation_fn)
+                    .upsample_conv(5, num_filters)
+                    # .custom_deconv2d(num_filters)
+                    .batch_normalize()
+                    .apply(gen_activation_fn)
             )
         tmp = tmp.conv2d(5, input.CHANNELS).apply(tf.nn.tanh)
         output = tmp
 
         z_prediction = (
             features
-            .fully_connected(FLAGS.gen_fc_size)
-            .apply(gen_activation_fn)
-            .fully_connected(FLAGS.gen_fc_size)
-            .apply(gen_activation_fn)
-            .fully_connected(FLAGS.gen_fc_size)
-            .apply(gen_activation_fn)
-            .fully_connected(FLAGS.z_size)
+                .fully_connected(FLAGS.gen_fc_size)
+                .apply(gen_activation_fn)
+                .fully_connected(FLAGS.gen_fc_size)
+                .apply(gen_activation_fn)
+                .fully_connected(FLAGS.gen_fc_size)
+                .apply(gen_activation_fn)
+                .fully_connected(FLAGS.z_size)
         )
 
     return output, z_prediction
+
 
 def discriminator_template():
     num_filters = FLAGS.discrim_filter_base
     with tf.variable_scope('discriminator'):
         tmp = pt.template('input')
-        for i in xrange(input.NUM_LEVELS):
+        for i in range(input.NUM_LEVELS):
             if i > 0:
                 tmp = tmp.dropout(FLAGS.keep_prob)
             tmp = tmp.conv2d(5, num_filters)
@@ -125,23 +123,25 @@ def discriminator_template():
 
         minibatch_discrim = features.minibatch_discrimination(100)
 
-        for i in xrange(FLAGS.discrim_fc_layers-1):
+        for i in range(FLAGS.discrim_fc_layers - 1):
             tmp = tmp.fully_connected(FLAGS.discrim_fc_size).apply(discrim_activation_fn)
         tmp = tmp.concat(1, [minibatch_discrim]).fully_connected(1)
         output = tmp
 
     return output
-        
+
+
 def losses(real_images):
     # get z
-    z = tf.truncated_normal([FLAGS.batch_size, FLAGS.z_size], stddev=1) 
-    #z = tf.random_uniform([FLAGS.batch_size, FLAGS.z_size], minval=-1, maxval=1)
+    z = tf.truncated_normal([FLAGS.batch_size, FLAGS.z_size], stddev=1)
+    # z = tf.random_uniform([FLAGS.batch_size, FLAGS.z_size], minval=-1, maxval=1)
 
-    d_template = discriminator_template() 
+    d_template = discriminator_template()
     g_template = generator_template()
 
     gen_images, z_prediction = pt.construct_all(g_template, input=z)
-    tf.image_summary('generated_images', gen_images, max_images=FLAGS.batch_size, name='generated_images_summary')
+
+    tf.image.summary(name='generated_images_summary', tensor=gen_images, max_images=FLAGS.batch_size)
 
     real_logits = d_template.construct(input=real_images)
     fake_logits = d_template.construct(input=gen_images)
@@ -150,7 +150,8 @@ def losses(real_images):
     fake_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(fake_logits, tf.zeros_like(fake_logits)))
     discriminator_loss = tf.add(real_loss, fake_loss, name='discriminator_loss')
 
-    generator_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(fake_logits, tf.ones_like(fake_logits)), name='generator_loss')
+    generator_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(fake_logits, tf.ones_like(fake_logits)),
+                                    name='generator_loss')
 
     z_prediction_loss = tf.reduce_mean(tf.square(z - z_prediction), name='z_prediction_loss')
 
@@ -159,6 +160,7 @@ def losses(real_images):
     tf.add_to_collection('losses', z_prediction_loss)
 
     return generator_loss, discriminator_loss, z_prediction_loss
+
 
 def train(loss, global_step, net=None):
     if net == 'generator':
@@ -177,16 +179,15 @@ def train(loss, global_step, net=None):
     grads = opt.compute_gradients(loss, var_list=variables)
 
     # Apply gradients.
-    apply_gradient_op = opt.apply_gradients(grads, global_step=global_step, name='train_'+net)
+    apply_gradient_op = opt.apply_gradients(grads, global_step=global_step, name='train_' + net)
 
     # Add histograms for trainable variables.
-    #for var in tf.trainable_variables():
+    # for var in tf.trainable_variables():
     #    tf.histogram_summary(var.op.name, var)
 
     # Add histograms for gradients.
-    #for grad, var in discrim_grads + gen_grads:
+    # for grad, var in discrim_grads + gen_grads:
     #    if grad is not None:
     #        tf.histogram_summary(var.op.name + '/gradients', grad)
 
     return apply_gradient_op
-

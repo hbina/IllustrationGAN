@@ -1,0 +1,3 @@
+tensorflow=1.7
+prettytensor=1.7
+matplotlib

@@ -2,19 +2,15 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import sys
-import os.path
-
-import numpy as np
-#import cv2
-import tensorflow as tf
-import prettytensor as pt
-
 import matplotlib.pyplot as plt
+import numpy as np
+import prettytensor as pt
+# import cv2
+import tensorflow as tf
 from mpl_toolkits.axes_grid1 import ImageGrid
 
-import model
 import input
+import model
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -22,6 +18,7 @@ tf.app.flags.DEFINE_string('model_dir', './tmp',
                            '''Directory where the model file is located.''')
 
 GRID = (8, 8)
+
 
 def init_variables(sess):
     init_op = tf.initialize_all_variables()
@@ -37,6 +34,7 @@ def init_variables(sess):
         raise Exception('No checkpoint file found')
     return
 
+
 def main(argv=None):
     input.init_dataset_constants()
     num_images = GRID[0] * GRID[1]
@@ -44,7 +42,7 @@ def main(argv=None):
     with tf.Graph().as_default():
         g_template = model.generator_template()
         z = tf.placeholder(tf.float32, shape=[FLAGS.batch_size, FLAGS.z_size])
-        #np.random.seed(1337) # generate same random numbers each time
+        # np.random.seed(1337) # generate same random numbers each time
         noise = np.random.normal(size=(FLAGS.batch_size, FLAGS.z_size))
         with pt.defaults_scope(phase=pt.Phase.test):
             gen_images_op, _ = pt.construct_all(g_template, input=z)
@@ -55,12 +53,12 @@ def main(argv=None):
         gen_images = (gen_images + 1) / 2
 
         sess.close()
-        
+
         fig = plt.figure(1)
         grid = ImageGrid(fig, 111,
                          nrows_ncols=GRID,
                          axes_pad=0.1)
-        for i in xrange(num_images):
+        for i in range(num_images):
             im = gen_images[i]
             axis = grid[i]
             axis.axis('off')
@@ -69,6 +67,6 @@ def main(argv=None):
         plt.show()
         fig.savefig('montage.png', dpi=100, bbox_inches='tight')
 
+
 if __name__ == '__main__':
     tf.app.run()
-

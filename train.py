@@ -2,16 +2,14 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from datetime import datetime
-import sys
-import os.path
 import time
+from datetime import datetime
 
 import numpy as np
 import tensorflow as tf
 
-import model
 import input
+import model
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -37,6 +35,7 @@ tf.app.flags.DEFINE_float('keep_checkpoint_every_n_hours', 10000.0,
 tf.app.flags.DEFINE_boolean('save_discriminator', False,
                             'Whether to save the discriminator variables in addition to the generator.')
 
+
 def init_variables(sess):
     init_op = tf.initialize_all_variables()
     sess.run(init_op)
@@ -52,6 +51,7 @@ def init_variables(sess):
         else:
             raise RuntimeError('No checkpoint file found.')
     return
+
 
 def train():
     input.init_dataset_constants()
@@ -104,7 +104,7 @@ def train():
         net = 'discriminator'
         count = 0
 
-        for step in xrange(FLAGS.max_steps):
+        for step in range(FLAGS.max_steps):
             if net == 'discriminator':
                 op, loss = discrim_train_op, discrim_loss
                 count += 1
@@ -152,13 +152,14 @@ def train():
         coord.join(threads)
         sess.close()
 
+
 def main(argv=None):
     if tf.gfile.Exists(FLAGS.train_dir):
         tf.gfile.DeleteRecursively(FLAGS.train_dir)
     tf.gfile.MakeDirs(FLAGS.train_dir)
-    
+
     train()
+
 
 if __name__ == '__main__':
     tf.app.run()
-

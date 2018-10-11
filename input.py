@@ -2,11 +2,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import sys
 import os.path
-import time
 
-import numpy as np
 import tensorflow as tf
 
 FLAGS = tf.app.flags.FLAGS
@@ -15,6 +12,7 @@ tf.app.flags.DEFINE_string('data_dir', './datasets/anime_faces',
                            'Training data directory.')
 tf.app.flags.DEFINE_string('dataset', 'custom',
                            'One of: custom, cifar')
+
 
 def read_and_decode_cifar(filename_queue):
     label_bytes = 1
@@ -34,6 +32,7 @@ def read_and_decode_cifar(filename_queue):
     image = tf.cast(image, tf.float32) * (2. / 255) - 1
 
     return image
+
 
 def read_and_decode1(filename_queue):
     reader = tf.TFRecordReader()
@@ -59,9 +58,9 @@ def read_and_decode1(filename_queue):
 
     shape = tf.cast(tf.shape(image), tf.float32)
     height_pad = tf.maximum(tf.ceil((96 - shape[0]) / 2), 0)
-    height_pad = tf.reshape(height_pad, [1,1])
+    height_pad = tf.reshape(height_pad, [1, 1])
     width_pad = tf.maximum(tf.ceil((96 - shape[1]) / 2), 0)
-    width_pad = tf.reshape(width_pad, [1,1])
+    width_pad = tf.reshape(width_pad, [1, 1])
     height_pad = tf.tile(height_pad, [1, 2])
     width_pad = tf.tile(width_pad, [1, 2])
     paddings = tf.concat(0, [height_pad, width_pad, tf.zeros([1, 2])])
@@ -73,15 +72,17 @@ def read_and_decode1(filename_queue):
 
     # downsample
     image = tf.image.resize_images(image, IMAGE_SIZE, IMAGE_SIZE, method=tf.image.ResizeMethod.AREA)
-    #image = tf.image.resize_images(image, IMAGE_SIZE, IMAGE_SIZE, method=tf.image.ResizeMethod.BICUBIC)
+
+    # image = tf.image.resize_images(image, IMAGE_SIZE, IMAGE_SIZE, method=tf.image.ResizeMethod.BICUBIC)
 
     # randomly flip the image horizontally
     image = tf.image.random_flip_left_right(image)
 
     label = features['label']
     label = tf.slice(label, [0], [NUM_TAGS_TO_USE])
-    
+
     return image, label
+
 
 def read_and_decode2(filename_queue):
     reader = tf.TFRecordReader()
@@ -109,10 +110,11 @@ def read_and_decode2(filename_queue):
 
     return image
 
+
 def inputs():
     if FLAGS.dataset == 'cifar':
         filenames = [os.path.join(FLAGS.data_dir, 'cifar', 'data_batch_%d.bin' % i)
-                     for i in xrange(1, 6)]
+                     for i in range(1, 6)]
         filename_queue = tf.train.string_input_producer(filenames)
         image = read_and_decode_cifar(filename_queue)
     elif FLAGS.dataset == 'custom':
@@ -137,13 +139,14 @@ def inputs():
         [image],
         batch_size=FLAGS.batch_size,
         num_threads=num_preprocess_threads,
-        capacity=3*min_queue_examples,
+        capacity=3 * min_queue_examples,
         min_after_dequeue=min_queue_examples)
 
     # display training images in visualizer
-    tf.image_summary('images', images, max_images=FLAGS.batch_size, name='images_summary')
+    tf.summary.image(name='images_summary', tensor=images, max_outputs=FLAGS.batch_size)
 
     return images
+
 
 def init_dataset_constants():
     global IMAGE_SIZE
@@ -159,4 +162,3 @@ def init_dataset_constants():
         CHANNELS = 3
     else:
         raise NotImplemented()
-
